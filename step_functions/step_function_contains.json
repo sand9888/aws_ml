@@ -1,0 +1,57 @@
+{
+  "Comment": "A Hello World example demonstrating various state types of the Amazon States Language",
+  "StartAt": "Transcribe",
+  "States": {
+       "Transcribe": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:704061746344:function:lab-lambda-transcribe:$LATEST",
+        "Payload": {
+          "Input.$": "$"
+        }
+      },
+      "Next": "transcribe-wait"
+} ,
+    "transcribe-wait":{
+        "Type":"Wait",
+        "Seconds":2,
+        "Next":"Invoke Lambda function"
+    },
+     "Invoke Lambda function": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "arn:aws:lambda:us-east-1:704061746344:function:lambda-status-checker:$LATEST",
+        "Payload": {
+          "Input.$": "$"
+        }
+      },
+      "Next": "transcribe-complete"
+    },
+    "transcribe-complete":{
+        "Type":"Choice",
+        "Choices":[
+            {
+                "Variable":"$.Payload.TranscriptionJobStatus",
+                "StringEquals":"COMPLETED",
+                "Next":"success"
+            },
+            {
+                "Variable":"$.Payload.TranscriptionJobStatus",
+                "StringEquals":"FAILED",
+                "Next":"error"
+            }
+        ],
+        "Default":"transcribe-wait"  
+    },
+    "success": {
+        "Type": "Pass",
+        "End": true
+    },
+    "error": {
+        "Type": "Pass",
+        "End": true
+    }
+  }
+}
